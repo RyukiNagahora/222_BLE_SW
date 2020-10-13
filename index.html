@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <title>AirSwitch_BLE</title>
+    <style type="text/css">
+    .btn {
+      width: 100px;
+      height: 100px;
+      margin-top: 20px;
+    }
+
+    .btn+.btn {
+      margin-left: 20px;
+    }
+    /* .btns {
+      margin-top: 20px;
+    } */
+    .effectBtn {
+      background-color: aqua;
+    }
+
+    #ef01 {
+      background-color: #130081;
+      color: white;
+    }
+
+    #ef02 {
+      background-color: #FF7A62;
+    }
+
+    #ef03 {
+      background-color: #FFEEBB;
+    }
+
+    #ef00 {
+      background-color: #000000;
+      color: white;
+    }
+    
+    </style>
+  </head>
+  <body>
+    <div class="btns">
+      <button id="connect" class="uiBtn btn">接続</button>
+      <button id="disconnect" class="uiBtn btn">切断</button>
+    </div>
+    <div class="btns">
+      <button id="ef01" class="effectBtn btn">YOGA</button>
+      <button id="ef02" class="effectBtn btn">RELAX</button>
+    </div>
+    <div class="btns">
+      <button id="ef03" class="effectBtn btn">1/f</button>
+      <button id="ef00" class="effectBtn btn">CANCEL</button>
+    </div>
+    
+    <!-- <input id="message" value="hello" />
+    <button id="send">送信</button> -->
+
+    <!-- <script src="//cdnjs.cloudflare.com/ajax/libs/d3/4.3.0/d3.min.js"></script>     -->
+    <script>
+var bluetoothDevice;
+var characteristic;
+
+// BLE UUID
+// var LED_SERVICE_UUID                        = 'e95dd91d-251d-470a-a062-fa1922dfa9a8';
+var LED_SERVICE_UUID                        = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+// var LED_TEXT_CHARACTERISTIC_UUID            = 'e95d93ee-251d-470a-a062-fa1922dfa9a8';
+var LED_TEXT_CHARACTERISTIC_UUID            = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+
+
+//ボタンイベントリスナー
+document.getElementById("connect").addEventListener("click", function () {
+  connect();
+}, false);
+document.getElementById("disconnect").addEventListener("click", function () {
+  disconnect();
+}, false);
+document.getElementById("ef01").addEventListener("click", function () {
+  sendMessage("1");
+}, false);
+document.getElementById("ef02").addEventListener("click", function () {
+  sendMessage("2");
+}, false);
+document.getElementById("ef03").addEventListener("click", function () {
+  sendMessage("3");
+}, false);
+document.getElementById("ef00").addEventListener("click", function () {
+  sendMessage("0");
+}, false);
+
+
+//chibi:bitに接続する
+function connect() {
+  let options = {};
+
+  options.acceptAllDevices = true;
+  
+  navigator.bluetooth.requestDevice({
+    filters: [
+      { services: [LED_SERVICE_UUID] },
+      { namePrefix: "MyESP32_02" }
+    ]
+  })
+  .then(device => {
+    bluetoothDevice = device;
+    console.log("device", device);
+    return device.gatt.connect();
+  })
+  .then(server =>{
+    console.log("server", server)
+    return server.getPrimaryService(LED_SERVICE_UUID);
+  })
+  .then(service => {
+    console.log("service", service)
+    return service.getCharacteristic(LED_TEXT_CHARACTERISTIC_UUID)
+  })
+  .then(chara => {
+    console.log("characteristic", chara)
+    alert("BLE接続が完了しました。");
+    characteristic = chara;
+  })  
+  .catch(error => {
+    console.log(error);
+  });    
+}
+
+//LEDに表示するメッセージを送信
+function sendMessage(str) {
+  if (!bluetoothDevice || !bluetoothDevice.gatt.connected || !characteristic) return ;
+  // var text = document.querySelector("#message").value;
+  var arrayBuffe = new TextEncoder().encode(str);
+  characteristic.writeValue(arrayBuffe);        
+}
+
+
+//BEL切断処理
+function disconnect() {
+  if (!bluetoothDevice || !bluetoothDevice.gatt.connected) return ;
+  bluetoothDevice.gatt.disconnect();
+  alert("BLE接続を切断しました。")
+}
+
+</script>    
+</body>
+</html>
